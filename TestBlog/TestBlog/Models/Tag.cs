@@ -8,10 +8,10 @@ namespace TestBlog.Models
 
         [Required]
         [StringLength(50)]
-        public string Name { get; set; }
+        public required string Name { get; set; }
 
-        public string Description { get; set; }
+        public string? Description { get; set; }
 
-        public virtual ICollection<ArticleTag> ArticleTags { get; set; }
+        public virtual ICollection<ArticleTag>? ArticleTags { get; set; }
     }
 }

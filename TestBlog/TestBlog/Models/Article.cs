@@ -8,10 +8,10 @@ namespace TestBlog.Models
 
         [Required]
         [StringLength(200)]
-        public string Title { get; set; }
+        public required string Title { get; set; }
 
         [Required]
-        public string Content { get; set; }
+        public required string Content { get; set; }
 
         public DateTime CreatedDate { get; set; }
         public DateTime? UpdatedDate { get; set; }
@@ -21,8 +21,8 @@ namespace TestBlog.Models
         public bool IsPublished { get; set; }
 
         // Навигационные свойства
-        public virtual User Author { get; set; }
-        public virtual ICollection<Comment> Comments { get; set; }
-        public virtual ICollection<ArticleTag> ArticleTags { get; set; }
+        public virtual User? Author { get; set; }
+        public virtual ICollection<Comment>? Comments { get; set; }
+        public virtual ICollection<ArticleTag>? ArticleTags { get; set; }
     }
 }

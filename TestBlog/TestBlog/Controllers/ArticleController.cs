@@ -53,19 +53,44 @@ namespace TestBlog.Controllers
         {
             if (ModelState.IsValid)
             {
+                // Получаем имя пользователя с проверкой
                 var username = User?.Identity?.Name;
+
+                if (string.IsNullOrWhiteSpace(username))
+                {
+                    ModelState.AddModelError("", "User is not authenticated");
+                    ViewBag.Tags = await _tagService.GetAllTagsAsync();
+                    return View(article);
+                }
+
+                // Получаем пользователя из БД
                 var user = await _userService.GetUserByUsernameAsync(username);
+
+                if (user == null)
+                {
+                    ModelState.AddModelError("", "User not found");
+                    ViewBag.Tags = await _tagService.GetAllTagsAsync();
+                    return View(article);
+                }
+
                 article.AuthorId = user.Id;
 
+                // Создаем статью
                 var result = await _articleService.CreateArticleAsync(
-                    article, selectedTags?.ToList() ?? new List<int>());
+                    article,
+                    selectedTags?.ToList() ?? new List<int>()
+                );
 
                 if (result)
                 {
+                    TempData["Success"] = "Article created successfully!";
                     return RedirectToAction(nameof(Index));
                 }
+
+                ModelState.AddModelError("", "Failed to create article");
             }
 
+            // В случае ошибки загружаем теги и возвращаем форму
             ViewBag.Tags = await _tagService.GetAllTagsAsync();
             return View(article);
         }

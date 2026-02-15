@@ -34,7 +34,6 @@ namespace TestBlog.Controllers
             if (!ModelState.IsValid)
                 return View(model);
 
-            // 1. Аутентификация пользователя
             var isAuthenticated = await _userService.AuthenticateAsync(model.Username, model.Password);
 
             if (!isAuthenticated)
@@ -43,7 +42,6 @@ namespace TestBlog.Controllers
                 return View(model);
             }
 
-            // 2. Получаем пользователя
             var user = await _userService.GetUserByUsernameAsync(model.Username);
 
             if (user == null || !user.IsActive)
@@ -52,11 +50,9 @@ namespace TestBlog.Controllers
                 return View(model);
             }
 
-            // 3. Получаем роли пользователя
             var roles = await _userService.GetUserRolesAsync(user.Id);
             var roleNames = roles.Select(r => r.Name).ToList();
 
-            // 4. СОЗДАЕМ КЛЕЙМЫ И СОХРАНЯЕМ РОЛИ
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
@@ -67,17 +63,18 @@ namespace TestBlog.Controllers
                 new Claim("IsActive", user.IsActive.ToString())
             };
 
-            // 5. ДОБАВЛЯЕМ КАЖДУЮ РОЛЬ КАК ОТДЕЛЬНЫЙ КЛЕЙМ
-            foreach (var roleName in roleNames)
+
+            foreach (var roleName in roleNames.OfType<string>().Where(r => !string.IsNullOrWhiteSpace(r)))
             {
                 claims.Add(new Claim(ClaimTypes.Role, roleName));
-                claims.Add(new Claim("UserRole", roleName)); // дополнительный клейм для удобства
+                claims.Add(new Claim("UserName", roleName));
             }
 
             // 6. Добавляем primary role (первая роль)
-            if (roleNames.Any())
+            var primaryRole = roleNames.FirstOrDefault(r => !string.IsNullOrWhiteSpace(r));
+            if (primaryRole != null)
             {
-                claims.Add(new Claim("PrimaryRole", roleNames.First()));
+                claims.Add(new Claim("PrimaryRole", primaryRole));
             }
 
             // 7. Обновляем дату последнего входа
@@ -149,8 +146,24 @@ namespace TestBlog.Controllers
         [Authorize]
         public async Task<IActionResult> Profile()
         {
-            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+            if (userIdClaim == null)
+            {
+                return Unauthorized("User ID not found");
+            }
+
+            // Безопасное преобразование в int
+            if (!int.TryParse(userIdClaim.Value, out var userId))
+            {
+                return BadRequest("Invalid user ID format");
+            }
+
             var user = await _userService.GetUserByIdAsync(userId);
+            if (user == null)
+            {
+                return NotFound($"User with ID {userId} not found");
+            }
+
             var roles = User.FindAll(ClaimTypes.Role).Select(c => c.Value).ToList();
 
             ViewBag.Roles = roles;

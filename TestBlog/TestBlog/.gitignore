@@ -1,0 +1,39 @@
+## .NET Core
+build/
+[Bb]in/
+[Oo]bj/
+*.user
+*.userprefs
+*.suo
+*.userosscache
+.vs/
+*.csproj.user
+*.dbmdl
+*.dbml
+*.mdf
+*.ldf
+*.sdf
+*.xml
+*.log
+
+## Azure Functions
+local.settings.json
+
+## Visual Studio Code
+.vscode/
+*.code-workspace
+
+## Node
+node_modules/
+npm-debug.log
+yarn-error.log
+
+## Environment files
+.env
+appsettings.Development.json
+appsettings.Production.json
+
+## Publishing
+publish/
+*.publish.xml
+*.pubxml.user

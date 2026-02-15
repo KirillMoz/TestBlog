@@ -27,14 +27,24 @@ namespace TestBlog.Services.Implementations
 
         public async Task<User> GetUserByUsernameAsync(string username)
         {
+            if (string.IsNullOrWhiteSpace(username))
+                throw new ArgumentException("username cannot be empty", nameof(username));
+
             var users = await _userRepository.FindAsync(u => u.Username == username);
-            return users.FirstOrDefault();
+            var user = users?.FirstOrDefault();
+
+            return user ?? throw new KeyNotFoundException($"User with username {username} not found");
         }
 
         public async Task<User> GetUserByEmailAsync(string email)
         {
+            if (string.IsNullOrWhiteSpace(email))
+                throw new ArgumentException("Email cannot be empty", nameof(email));
+
             var users = await _userRepository.FindAsync(u => u.Email == email);
-            return users.FirstOrDefault();
+            var user = users?.FirstOrDefault();
+
+            return user ?? throw new KeyNotFoundException($"User with email {email} not found");
         }
 
         public async Task<IEnumerable<User>> GetAllUsersAsync()
@@ -44,26 +54,55 @@ namespace TestBlog.Services.Implementations
 
         public async Task<bool> CreateUserAsync(User user, string password)
         {
+            if (user == null)
+                return false;
+
+            // Расширенная валидация
+            if (string.IsNullOrWhiteSpace(user.Username))
+            {
+                // Можно логировать ошибку
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(user.Email))
+            {
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(password))
+            {
+                return false;
+            }
+
+            // Проверка формата email (опционально)
+            if (!IsValidEmail(user.Email))
+            {
+                return false;
+            }
+
             try
             {
-                if (await GetUserByUsernameAsync(user.Username) != null)
+                // Теперь здесь нет предупреждений
+                var existingUserByUsername = await GetUserByUsernameAsync(user.Username);
+                if (existingUserByUsername != null)
                     return false;
 
-                if (await GetUserByEmailAsync(user.Email) != null)
+                var existingUserByEmail = await GetUserByEmailAsync(user.Email);
+                if (existingUserByEmail != null)
                     return false;
 
+                // Остальной код...
                 user.PasswordHash = PasswordHelper.HashPassword(password);
                 user.RegistrationDate = DateTime.Now;
                 user.IsActive = true;
 
                 await _userRepository.AddAsync(user);
                 await _userRepository.SaveAsync();
-
                 await AddUserToRoleAsync(user.Id, "User");
 
                 return true;
             }
-            catch
+            catch (Exception)
             {
                 return false;
             }
@@ -108,7 +147,8 @@ namespace TestBlog.Services.Implementations
             if (user == null || !user.IsActive)
                 return false;
 
-            return PasswordHelper.VerifyPassword(password, user.PasswordHash);
+            return user.PasswordHash != null &&
+                PasswordHelper.VerifyPassword(password, user.PasswordHash);
         }
 
         public async Task<IEnumerable<Role>> GetUserRolesAsync(int userId)
@@ -196,17 +236,41 @@ namespace TestBlog.Services.Implementations
         {
             try
             {
-                var user = await GetUserByIdAsync(userId);
+                if (string.IsNullOrWhiteSpace(oldPassword))
+                    return false;
+
+                if (string.IsNullOrWhiteSpace(newPassword))
+                    return false;
+
+                var user = await GetUserByIdAsync(userId); 
                 if (user == null)
+                    return false;
+
+                if (string.IsNullOrEmpty(user.PasswordHash))
                     return false;
 
                 if (!PasswordHelper.VerifyPassword(oldPassword, user.PasswordHash))
                     return false;
 
                 user.PasswordHash = PasswordHelper.HashPassword(newPassword);
+
                 _userRepository.Update(user);
                 await _userRepository.SaveAsync();
+
                 return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private bool IsValidEmail(string email)
+        {
+            try
+            {
+                var addr = new System.Net.Mail.MailAddress(email);
+                return addr.Address == email;
             }
             catch
             {

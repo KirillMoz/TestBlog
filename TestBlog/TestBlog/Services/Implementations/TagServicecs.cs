@@ -23,8 +23,18 @@ namespace TestBlog.Services.Implementations
 
         public async Task<Tag> GetTagByNameAsync(string name)
         {
+            if (string.IsNullOrWhiteSpace(name))
+                throw new ArgumentException("Tag name cannot be empty", nameof(name));
+
             var tags = await _tagRepository.FindAsync(t => t.Name == name);
-            return tags.FirstOrDefault();
+            var tag = tags?.FirstOrDefault();
+
+            if (tag == null)
+            {
+                throw new KeyNotFoundException($"Tag '{name}' not found");
+            }
+
+            return tag;
         }
 
         public async Task<IEnumerable<Tag>> GetAllTagsAsync()

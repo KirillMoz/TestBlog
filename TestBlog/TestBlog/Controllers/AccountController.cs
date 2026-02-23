@@ -3,8 +3,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
-using TestBlog.Services;
-
+using TestBlog.Services.Interfaces;
 using TestBlog.ViewModels.Account;
 
 namespace TestBlog.Controllers
@@ -12,10 +11,12 @@ namespace TestBlog.Controllers
     public class AccountController : Controller
     {
         private readonly IUserService _userService;
+        private readonly ILogger<AccountController> _logger;
 
-        public AccountController(IUserService userService)
+        public AccountController(IUserService userService, ILogger<AccountController> logger)
         {
             _userService = userService;
+            _logger = logger;
         }
 
         [HttpGet]
@@ -24,9 +25,6 @@ namespace TestBlog.Controllers
             return View();
         }
 
-        /// <summary>
-        /// Аутентификация пользователя с сохранением ролей в клеймах
-        /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Login(LoginViewModel model)
@@ -38,7 +36,7 @@ namespace TestBlog.Controllers
 
             if (!isAuthenticated)
             {
-                ModelState.AddModelError("", "Invalid username or password");
+                ModelState.AddModelError("", "Неверное имя пользователя или пароль");
                 return View(model);
             }
 
@@ -46,7 +44,7 @@ namespace TestBlog.Controllers
 
             if (user == null || !user.IsActive)
             {
-                ModelState.AddModelError("", "Account is deactivated");
+                ModelState.AddModelError("", "Аккаунт деактивирован");
                 return View(model);
             }
 
@@ -58,47 +56,27 @@ namespace TestBlog.Controllers
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                 new Claim(ClaimTypes.Name, user.Username),
                 new Claim(ClaimTypes.Email, user.Email),
-                new Claim("UserId", user.Id.ToString()),
-                new Claim("RegistrationDate", user.RegistrationDate.ToString("yyyy-MM-dd")),
-                new Claim("IsActive", user.IsActive.ToString())
             };
 
-
-            foreach (var roleName in roleNames.OfType<string>().Where(r => !string.IsNullOrWhiteSpace(r)))
+            foreach (var roleName in roleNames)
             {
-                claims.Add(new Claim(ClaimTypes.Role, roleName));
-                claims.Add(new Claim("UserName", roleName));
+                if (!string.IsNullOrEmpty(roleName))
+                    claims.Add(new Claim(ClaimTypes.Role, roleName));
             }
 
-            // 6. Добавляем primary role (первая роль)
-            var primaryRole = roleNames.FirstOrDefault(r => !string.IsNullOrWhiteSpace(r));
-            if (primaryRole != null)
-            {
-                claims.Add(new Claim("PrimaryRole", primaryRole));
-            }
-
-            // 7. Обновляем дату последнего входа
-            user.LastLoginDate = DateTime.Now;
-            await _userService.UpdateUserAsync(user);
-
-            // 8. Создаем ClaimsIdentity и ClaimsPrincipal
-            var claimsIdentity = new ClaimsIdentity(
-                claims,
-                CookieAuthenticationDefaults.AuthenticationScheme
-            );
-
+            var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
             var claimsPrincipal = new ClaimsPrincipal(claimsIdentity);
 
-            // 9. Выполняем вход
-            await HttpContext.SignInAsync(
-                CookieAuthenticationDefaults.AuthenticationScheme,
+            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme,
                 claimsPrincipal,
                 new AuthenticationProperties
                 {
                     IsPersistent = model.RememberMe,
                     ExpiresUtc = DateTimeOffset.UtcNow.AddDays(7)
-                }
-            );
+                });
+
+            user.LastLoginDate = DateTime.Now;
+            await _userService.UpdateUserAsync(user);
 
             return RedirectToAction("Index", "Home");
         }
@@ -113,6 +91,9 @@ namespace TestBlog.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Register(RegisterViewModel model)
         {
+            _logger.LogInformation($"=== ПОПЫТКА РЕГИСТРАЦИИ ===");
+            _logger.LogInformation($"Username: '{model.Username}', Email: '{model.Email}'");
+
             if (ModelState.IsValid)
             {
                 var user = new Models.User
@@ -125,10 +106,31 @@ namespace TestBlog.Controllers
 
                 if (result)
                 {
-                    return RedirectToAction("Login");
-                }
+                    _logger.LogInformation($"✅ РЕГИСТРАЦИЯ УСПЕШНА: {model.Username}");
 
-                ModelState.AddModelError("", "Username or email already exists.");
+                    // Автоматический вход после регистрации
+                    await Login(new LoginViewModel
+                    {
+                        Username = model.Username,
+                        Password = model.Password,
+                        RememberMe = false
+                    });
+
+                    return RedirectToAction("Index", "Home");
+                }
+                else
+                {
+                    _logger.LogWarning($"❌ РЕГИСТРАЦИЯ НЕ УДАЛАСЬ: {model.Username}");
+                    ModelState.AddModelError("", "Имя пользователя или email уже существует");
+                }
+            }
+            else
+            {
+                _logger.LogWarning("Модель не валидна");
+                foreach (var error in ModelState.Values.SelectMany(v => v.Errors))
+                {
+                    _logger.LogWarning($"Ошибка валидации: {error.ErrorMessage}");
+                }
             }
 
             return View(model);
@@ -143,25 +145,18 @@ namespace TestBlog.Controllers
         }
 
         [HttpGet]
-        [Authorize]
         public async Task<IActionResult> Profile()
         {
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
-            if (userIdClaim == null)
+            if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int userId))
             {
-                return Unauthorized("User ID not found");
-            }
-
-            // Безопасное преобразование в int
-            if (!int.TryParse(userIdClaim.Value, out var userId))
-            {
-                return BadRequest("Invalid user ID format");
+                return RedirectToAction("Login");
             }
 
             var user = await _userService.GetUserByIdAsync(userId);
             if (user == null)
             {
-                return NotFound($"User with ID {userId} not found");
+                return RedirectToAction("Login");
             }
 
             var roles = User.FindAll(ClaimTypes.Role).Select(c => c.Value).ToList();
@@ -174,6 +169,39 @@ namespace TestBlog.Controllers
         public IActionResult AccessDenied()
         {
             return View();
+        }
+
+        [HttpGet]
+        [Authorize]
+        public IActionResult ChangePassword()
+        {
+            return View();
+        }
+
+        [HttpPost]
+        [Authorize]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ChangePassword(ChangePasswordViewModel model)
+        {
+            if (!ModelState.IsValid)
+                return View(model);
+
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+            if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int userId))
+            {
+                return RedirectToAction("Login");
+            }
+
+            var result = await _userService.ChangePasswordAsync(userId, model.OldPassword, model.NewPassword);
+
+            if (result)
+            {
+                TempData["SuccessMessage"] = "Пароль успешно изменен";
+                return RedirectToAction("Profile");
+            }
+
+            ModelState.AddModelError("", "Неверный текущий пароль");
+            return View(model);
         }
     }
 }

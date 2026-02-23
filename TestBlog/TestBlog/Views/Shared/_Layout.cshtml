@@ -1,49 +1,413 @@
 ﻿<!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - TestBlog</title>
-    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+          integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z"
+          crossorigin="anonymous">
+
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.15.4/css/all.css">
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/TestBlog.styles.css" asp-append-version="true" />
+
+    <style>
+        html {
+            position: relative;
+            min-height: 100%;
+        }
+
+        body {
+            margin-bottom: 250px; /* Высота футера */
+            background-color: #f8f9fa;
+        }
+
+        .footer {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 250px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 0 20px;
+            margin-top: 50px;
+        }
+
+        .navbar {
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        }
+
+        .navbar-brand {
+            font-weight: 700;
+            font-size: 1.5rem;
+            color: white !important;
+        }
+
+        .nav-link {
+            color: rgba(255,255,255,0.9) !important;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+            .nav-link:hover {
+                color: white !important;
+                transform: translateY(-2px);
+            }
+
+        .dropdown-menu {
+            border: none;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            border-radius: 10px;
+        }
+
+        .dropdown-item {
+            transition: all 0.3s;
+        }
+
+            .dropdown-item:hover {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white !important;
+            }
+
+        .btn-outline-light:hover {
+            background: white;
+            color: #667eea !important;
+        }
+
+        .footer a {
+            color: rgba(255,255,255,0.8);
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+
+            .footer a:hover {
+                color: white;
+                text-decoration: none;
+                padding-left: 5px;
+            }
+
+        .social-icons a {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            line-height: 40px;
+            text-align: center;
+            background: rgba(255,255,255,0.1);
+            border-radius: 50%;
+            margin-right: 10px;
+            transition: all 0.3s;
+        }
+
+            .social-icons a:hover {
+                background: white;
+                color: #667eea !important;
+                transform: translateY(-3px);
+            }
+
+        .footer hr {
+            background-color: rgba(255,255,255,0.2);
+        }
+
+        .main-content {
+            padding: 30px 0;
+            min-height: calc(100vh - 250px - 56px); /* Вычитаем высоту футера и navbar */
+        }
+
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            transition: transform 0.3s;
+        }
+
+            .card:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 25px;
+            padding: 8px 25px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+            .btn-primary:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+            }
+
+        .badge {
+            border-radius: 12px;
+            padding: 5px 12px;
+            font-weight: 500;
+        }
+
+        .badge-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+    </style>
 </head>
 <body>
-    <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
-            <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">TestBlog</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+        <div class="container">
+            <a class="navbar-brand" asp-controller="Home" asp-action="Index">
+                <i class="fas fa-blog mr-2"></i>TestBlog
+            </a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
+                    aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav mr-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" asp-controller="Home" asp-action="Index">
+                            <i class="fas fa-home mr-1"></i>Главная
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" asp-controller="Article" asp-action="Index">
+                            <i class="fas fa-newspaper mr-1"></i>Статьи
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" asp-controller="Tag" asp-action="Index">
+                            <i class="fas fa-tags mr-1"></i>Теги
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" asp-controller="Home" asp-action="About">
+                            <i class="fas fa-info-circle mr-1"></i>О нас
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" asp-controller="Home" asp-action="Contact">
+                            <i class="fas fa-envelope mr-1"></i>Контакты
+                        </a>
+                    </li>
+
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
+                            <a class="nav-link" asp-controller="Article" asp-action="Create">
+                                <i class="fas fa-pen mr-1"></i>Новая статья
+                            </a>
+                        </li>
+                    }
+
+                    <!-- Меню для администраторов -->
+                    @if (User.IsInRole("Admin") || User.IsInRole("Moderator"))
+                    {
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="adminDropdown" role="button"
+                               data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                <i class="fas fa-cog mr-1"></i>Управление
+                            </a>
+                            <div class="dropdown-menu" aria-labelledby="adminDropdown">
+                                @if (User.IsInRole("Admin"))
+                                {
+                                    <a class="dropdown-item" asp-controller="Admin" asp-action="Users">
+                                        <i class="fas fa-users mr-2"></i>Пользователи
+                                    </a>
+                                }
+                                @if (User.IsInRole("Admin") || User.IsInRole("Moderator"))
+                                {
+                                    <a class="dropdown-item" asp-controller="Article" asp-action="Admin">
+                                        <i class="fas fa-edit mr-2"></i>Модерация статей
+                                    </a>
+                                }
+                                <a class="dropdown-item" asp-controller="Tag" asp-action="Index">
+                                    <i class="fas fa-tags mr-2"></i>Управление тегами
+                                </a>
+                            </div>
+                        </li>
+                    }
+                </ul>
+
+                <!-- Меню пользователя справа -->
+                <ul class="navbar-nav">
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button"
+                               data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                <i class="fas fa-user-circle mr-1"></i>@User.Identity.Name
+                                @if (User.IsInRole("Admin"))
+                                {
+                                    <span class="badge badge-light ml-1">Admin</span>
+                                }
+                                else if (User.IsInRole("Moderator"))
+                                {
+                                    <span class="badge badge-light ml-1">Mod</span>
+                                }
+                            </a>
+                            <div class="dropdown-menu dropdown-menu-right" aria-labelledby="userDropdown">
+                                <a class="dropdown-item" asp-controller="Account" asp-action="Profile">
+                                    <i class="fas fa-id-card mr-2"></i>Мой профиль
+                                </a>
+                                <a class="dropdown-item" asp-controller="Article" asp-action="MyArticles">
+                                    <i class="fas fa-newspaper mr-2"></i>Мои статьи
+                                </a>
+                                <a class="dropdown-item" asp-controller="Account" asp-action="ChangePassword">
+                                    <i class="fas fa-key mr-2"></i>Сменить пароль
+                                </a>
+                                <div class="dropdown-divider"></div>
+                                <form asp-controller="Account" asp-action="Logout" method="post" class="dropdown-item p-0">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="dropdown-item text-danger">
+                                        <i class="fas fa-sign-out-alt mr-2"></i>Выход
+                                    </button>
+                                </form>
+                            </div>
+                        </li>
+                    }
+                    else
+                    {
+                        <li class="nav-item">
+                            <a class="nav-link" asp-controller="Account" asp-action="Register">
+                                <i class="fas fa-user-plus mr-1"></i>Регистрация
+                            </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+                            <a class="nav-link" asp-controller="Account" asp-action="Login">
+                                <i class="fas fa-sign-in-alt mr-1"></i>Вход
+                            </a>
+                        </li>
+                    }
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-3">
+        <div class="container mt-3">
+            @if (TempData["SuccessMessage"] != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    <i class="fas fa-check-circle mr-2"></i>
+                    @TempData["SuccessMessage"]
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+            }
+
+            @if (TempData["ErrorMessage"] != null)
+            {
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="fas fa-exclamation-circle mr-2"></i>
+                    @TempData["ErrorMessage"]
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="container">
+            @RenderBody()
+        </div>
+    </div>
+
+    <!-- ФУТЕР -->
+    <footer class="footer">
+        <div class="container">
+            <div class="row">
+                <!-- О нас -->
+                <div class="col-md-4 mb-4">
+                    <h5><i class="fas fa-blog mr-2"></i>TestBlog</h5>
+                    <p class="text-white-50">
+                        Современная платформа для блогов, где каждый может поделиться своими мыслями,
+                        идеями и опытом с миром.
+                    </p>
+                    <div class="social-icons mt-3">
+                        <a href="#"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#"><i class="fab fa-twitter"></i></a>
+                        <a href="#"><i class="fab fa-instagram"></i></a>
+                        <a href="#"><i class="fab fa-telegram-plane"></i></a>
+                        <a href="#"><i class="fab fa-github"></i></a>
+                    </div>
+                </div>
+
+                <!-- Быстрые ссылки -->
+                <div class="col-md-2 mb-4">
+                    <h5>Навигация</h5>
+                    <ul class="list-unstyled">
+                        <li><a asp-controller="Home" asp-action="Index"><i class="fas fa-chevron-right mr-2 small"></i>Главная</a></li>
+                        <li><a asp-controller="Article" asp-action="Index"><i class="fas fa-chevron-right mr-2 small"></i>Статьи</a></li>
+                        <li><a asp-controller="Article" asp-action="Create"><i class="fas fa-chevron-right mr-2 small"></i>Написать статью</a></li>
+                        <li><a asp-controller="Tag" asp-action="Index"><i class="fas fa-chevron-right mr-2 small"></i>Популярные теги</a></li>
+                    </ul>
+                </div>
+
+                <!-- Полезное -->
+                <div class="col-md-2 mb-4">
+                    <h5>Информация</h5>
+                    <ul class="list-unstyled">
+                        <li><a asp-controller="Home" asp-action="About"><i class="fas fa-chevron-right mr-2 small"></i>О проекте</a></li>
+                        <li><a asp-controller="Home" asp-action="Contact"><i class="fas fa-chevron-right mr-2 small"></i>Контакты</a></li>
+                    </ul>
+                </div>
+
+                <!-- Контакты -->
+                <div class="col-md-4 mb-4">
+                    <h5>Контакты</h5>
+                    <ul class="list-unstyled">
+                        <li class="mb-2">
+                            <i class="fas fa-map-marker-alt mr-2"></i>
+                            г. Москва, ул. Программная, д. 1
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-envelope mr-2"></i>
+                            <a href="mailto:info@testblog.ru">info@testblog.ru</a>
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-phone mr-2"></i>
+                            <a href="tel:+71234567890">+7 (123) 456-78-90</a>
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-clock mr-2"></i>
+                            Пн-Пт: 9:00 - 18:00
                         </li>
                     </ul>
                 </div>
             </div>
-        </nav>
-    </header>
-    <div class="container">
-        <main role="main" class="pb-3">
-            @RenderBody()
-        </main>
-    </div>
 
-    <footer class="border-top footer text-muted">
-        <div class="container">
-            &copy; 2026 - TestBlog - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+            <hr class="bg-white-50">
+
+            <!-- Копирайт -->
+            <div class="row">
+                <div class="col-12 text-center">
+                    <p class="mb-0 text-white-50">
+                        &copy; @DateTime.Now.Year - TestBlog. Все права защищены.
+                        Сделано с <i class="fas fa-heart text-danger"></i> для блогеров
+                    </p>
+                </div>
+            </div>
         </div>
     </footer>
-    <script src="~/lib/jquery/dist/jquery.min.js"></script>
-    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- jQuery и Bootstrap 4 JS -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"
+            integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj"
+            crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"
+            integrity="sha384-9/reFTGAW83EW2RDu2S0VKaIzap3H66lZH81PoYlFhbGU+6BZp6G7niu735Sk7lN"
+            crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"
+            integrity="sha384-B4gt1jrGC7Jh4AgTPSdUtOBvfO8shuf57BaghqFfPlYxofvL8/KUEfYiJOMMV+rV"
+            crossorigin="anonymous"></script>
+
+    <!-- Custom JS -->
     <script src="~/js/site.js" asp-append-version="true"></script>
+
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

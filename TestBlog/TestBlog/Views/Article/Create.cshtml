@@ -1,0 +1,68 @@
+﻿@model TestBlog.Models.Article
+@{
+    ViewData["Title"] = "Создание статьи";
+}
+
+<div class="container">
+    <h1 class="mb-4">Создание новой статьи</h1>
+
+    <form asp-action="Create" method="post">
+        @Html.AntiForgeryToken()
+
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+        <div class="form-group">
+            <label asp-for="Title" class="control-label"></label>
+            <input asp-for="Title" class="form-control" />
+            <span asp-validation-for="Title" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="Content" class="control-label"></label>
+            <textarea asp-for="Content" class="form-control" rows="15" id="editor"></textarea>
+            <span asp-validation-for="Content" class="text-danger"></span>
+            <small class="form-text text-muted">
+                Можно использовать HTML теги: &lt;p&gt;, &lt;strong&gt;, &lt;em&gt;, &lt;h1&gt;-&lt;h6&gt;, &lt;ul&gt;, &lt;ol&gt;, &lt;li&gt;
+            </small>
+        </div>
+
+        <div class="form-group">
+            <label class="control-label">Теги</label>
+            <select name="selectedTags" class="form-control" multiple size="5">
+                @foreach (var tag in ViewBag.Tags)
+                {
+                    <option value="@tag.Id">@tag.Name</option>
+                }
+            </select>
+            <small class="form-text text-muted">Выберите один или несколько тегов (Ctrl+Click)</small>
+        </div>
+
+        <div class="form-group mt-4">
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save mr-2"></i>Сохранить
+            </button>
+            <a asp-action="MyArticles" class="btn btn-outline-secondary">
+                <i class="fas fa-times mr-2"></i>Отмена
+            </a>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+    <!-- Добавляем простой редактор для HTML -->
+    <script src="https://cdn.ckeditor.com/4.16.2/standard/ckeditor.js"></script>
+    <script>
+        $(document).ready(function() {
+            CKEDITOR.replace('editor', {
+                height: 400,
+                allowedContent: true, // Разрешаем весь контент
+                extraAllowedContent: '*(*);*{*}', // Разрешаем любые классы и стили
+                removeButtons: 'Save,NewPage,Preview,Print,Templates,Cut,Copy,Paste,PasteText,PasteFromWord,Undo,Redo,Find,Replace,SelectAll,Scayt,Form,Checkbox,Radio,TextField,Textarea,Select,Button,ImageButton,HiddenField,Strike,Subscript,Superscript,CopyFormatting,RemoveFormat,NumberedList,BulletedList,Outdent,Indent,Blockquote,CreateDiv,JustifyLeft,JustifyCenter,JustifyRight,JustifyBlock,BidiLtr,BidiRtl,Language,Link,Unlink,Anchor,Image,Flash,Table,HorizontalRule,Smiley,SpecialChar,PageBreak,Iframe,Maximize,ShowBlocks,About'
+            });
+        });
+    </script>
+}

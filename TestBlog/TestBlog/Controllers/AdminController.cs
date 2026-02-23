@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TestBlog.Services;
+using TestBlog.Services.Interfaces;
 
 namespace TestBlog.Controllers
 {

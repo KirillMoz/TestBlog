@@ -1,10 +1,14 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using TestBlog.Models;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using TestBlog.Services;
+using TestBlog.Services.Interfaces;
 
 namespace TestBlog.Controllers
 {
+    [Authorize]
     public class ArticleController : Controller
     {
         private readonly IArticleService _articleService;
@@ -39,7 +43,7 @@ namespace TestBlog.Controllers
             return View(article);
         }
 
-        [Authorize]
+        [HttpGet]
         public async Task<IActionResult> Create()
         {
             ViewBag.Tags = await _tagService.GetAllTagsAsync();
@@ -47,52 +51,122 @@ namespace TestBlog.Controllers
         }
 
         [HttpPost]
-        [Authorize]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(Models.Article article, int[] selectedTags)
+        public async Task<IActionResult> Create(Article article, int[] selectedTags)
         {
+            // В ASP.NET Core HTML-код разрешен по умолчанию, если не использовать атрибут [HtmlEncode]
+            // Для безопасности можно добавить проверку на разрешенные теги
+
             if (ModelState.IsValid)
             {
-                // Получаем имя пользователя с проверкой
-                var username = User?.Identity?.Name;
-
-                if (string.IsNullOrWhiteSpace(username))
-                {
-                    ModelState.AddModelError("", "User is not authenticated");
-                    ViewBag.Tags = await _tagService.GetAllTagsAsync();
-                    return View(article);
-                }
-
-                // Получаем пользователя из БД
+                var username = User.Identity?.Name;
+                if (string.IsNullOrEmpty(username))
+                    return RedirectToAction("Login", "Account");
                 var user = await _userService.GetUserByUsernameAsync(username);
-
+                
                 if (user == null)
-                {
-                    ModelState.AddModelError("", "User not found");
-                    ViewBag.Tags = await _tagService.GetAllTagsAsync();
-                    return View(article);
-                }
-
+                    return RedirectToAction("Login", "Account");
                 article.AuthorId = user.Id;
 
-                // Создаем статью
                 var result = await _articleService.CreateArticleAsync(
-                    article,
-                    selectedTags?.ToList() ?? new List<int>()
-                );
+                    article, selectedTags?.ToList() ?? new List<int>());
 
                 if (result)
                 {
-                    TempData["Success"] = "Article created successfully!";
-                    return RedirectToAction(nameof(Index));
+                    TempData["SuccessMessage"] = "Статья успешно создана!";
+                    return RedirectToAction(nameof(MyArticles));
                 }
-
-                ModelState.AddModelError("", "Failed to create article");
+                else
+                {
+                    ModelState.AddModelError("", "Ошибка при создании статьи");
+                }
             }
 
-            // В случае ошибки загружаем теги и возвращаем форму
             ViewBag.Tags = await _tagService.GetAllTagsAsync();
             return View(article);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> Edit(int id)
+        {
+            var article = await _articleService.GetArticleByIdAsync(id);
+            if (article == null)
+                return NotFound();
+
+            var username = User.Identity?.Name;
+            if (string.IsNullOrEmpty(username))
+                return RedirectToAction("Login", "Account");
+
+            var user = await _userService.GetUserByUsernameAsync(username);
+            if (user == null)
+                return RedirectToAction("Login", "Account");
+
+            if (article.AuthorId != user.Id && !User.IsInRole("Admin") && !User.IsInRole("Moderator"))
+            {
+                return Forbid();
+            }
+
+            ViewBag.Tags = await _tagService.GetAllTagsAsync() ?? new List<Tag>();
+            return View(article);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(int id, Article article, int[] selectedTags)
+        {
+            if (id != article.Id)
+                return NotFound();
+
+            if (ModelState.IsValid)
+            {
+                var result = await _articleService.UpdateArticleAsync(
+                    article, selectedTags?.ToList() ?? new List<int>());
+
+                if (result)
+                {
+                    TempData["SuccessMessage"] = "Статья успешно обновлена!";
+                    return RedirectToAction(nameof(Details), new { id = article.Id });
+                }
+                else
+                {
+                    ModelState.AddModelError("", "Ошибка при обновлении статьи");
+                }
+            }
+
+            ViewBag.Tags = await _tagService.GetAllTagsAsync();
+            return View(article);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> Delete(int id)
+        {
+            var article = await _articleService.GetArticleByIdAsync(id);
+            if (article == null)
+                return NotFound();
+
+            var username = User.Identity?.Name;
+            if (string.IsNullOrEmpty(username))
+                return RedirectToAction("Login", "Account");
+
+            var user = await _userService.GetUserByUsernameAsync(username);
+            if (user == null)
+                return RedirectToAction("Login", "Account");
+
+            if (article.AuthorId != user.Id && !User.IsInRole("Admin"))
+            {
+                return Forbid();
+            }
+
+            return View(article);
+        }
+
+        [HttpPost, ActionName("Delete")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteConfirmed(int id)
+        {
+            await _articleService.DeleteArticleAsync(id);
+            TempData["SuccessMessage"] = "Статья успешно удалена!";
+            return RedirectToAction(nameof(MyArticles));
         }
 
         [Authorize(Roles = "Admin,Moderator")]
@@ -106,6 +180,7 @@ namespace TestBlog.Controllers
         public async Task<IActionResult> Publish(int id)
         {
             await _articleService.PublishArticleAsync(id);
+            TempData["SuccessMessage"] = "Статья опубликована!";
             return RedirectToAction(nameof(Admin));
         }
 
@@ -113,7 +188,39 @@ namespace TestBlog.Controllers
         public async Task<IActionResult> Unpublish(int id)
         {
             await _articleService.UnpublishArticleAsync(id);
+            TempData["SuccessMessage"] = "Статья снята с публикации!";
             return RedirectToAction(nameof(Admin));
+        }
+
+        // Мои статьи
+        [Authorize]
+        public async Task<IActionResult> MyArticles()
+        {
+            var username = User.Identity?.Name;
+            if (string.IsNullOrEmpty(username))
+                return RedirectToAction("Login", "Account");
+
+            var user = await _userService.GetUserByUsernameAsync(username);
+
+            if (user == null)
+                return RedirectToAction("Login", "Account");
+
+            var articles = await _articleService.GetArticlesByAuthorAsync(user.Id);
+            return View(articles);
+        }
+
+        // Статьи по тегу
+        [AllowAnonymous]
+        public async Task<IActionResult> ByTag(int tagId)
+        {
+            var tag = await _tagService.GetTagByIdAsync(tagId);
+            if (tag == null)
+                return NotFound();
+
+            var articles = await _articleService.GetArticlesByTagAsync(tagId);
+
+            ViewBag.TagName = tag.Name;
+            return View(articles);
         }
     }
 }

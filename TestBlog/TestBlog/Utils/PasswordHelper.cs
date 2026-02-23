@@ -7,17 +7,21 @@ namespace TestBlog.Utils
     {
         public static string HashPassword(string password)
         {
-            using (SHA256 sha256 = SHA256.Create())
-            {
-                byte[] hashedBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
-                return Convert.ToBase64String(hashedBytes);
-            }
+            if (string.IsNullOrEmpty(password))
+                throw new ArgumentException("Пароль не может быть пустым");
+
+            using var sha256 = SHA256.Create();
+            var hashedBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
+            return Convert.ToBase64String(hashedBytes);
         }
 
         public static bool VerifyPassword(string password, string hash)
         {
-            string hashedInput = HashPassword(password);
-            return hashedInput == hash;
+            if (string.IsNullOrEmpty(password) || string.IsNullOrEmpty(hash))
+                return false;
+
+            var hashOfInput = HashPassword(password);
+            return hashOfInput == hash;
         }
     }
 }

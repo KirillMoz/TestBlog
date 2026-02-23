@@ -1,8 +1,83 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+﻿﻿@{
+    ViewData["Title"] = "Главная";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="row">
+    <div class="col-12 text-center mb-5">
+        <h1 class="display-4">Добро пожаловать в TestBlog!</h1>
+        <p class="lead text-muted">Делитесь своими мыслями, читайте интересные статьи и общайтесь с единомышленниками</p>
+        @if (User.Identity?.IsAuthenticated == false)
+        {
+            <a asp-controller="Account" asp-action="Register" class="btn btn-primary btn-lg mr-2">
+                <i class="fas fa-user-plus mr-2"></i>Присоединиться
+            </a>
+        }
+        <a asp-controller="Article" asp-action="Index" class="btn btn-outline-primary btn-lg">
+            <i class="fas fa-newspaper mr-2"></i>Читать статьи
+        </a>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-pen-fancy fa-3x text-primary mb-3"></i>
+                <h5 class="card-title">Пишите статьи</h5>
+                <p class="card-text text-muted">Делитесь своими знаниями и опытом с сообществом. Публикуйте статьи на любые темы.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-comments fa-3x text-primary mb-3"></i>
+                <h5 class="card-title">Общайтесь</h5>
+                <p class="card-text text-muted">Комментируйте статьи, обсуждайте интересные темы, находите единомышленников.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-tags fa-3x text-primary mb-3"></i>
+                <h5 class="card-title">Используйте теги</h5>
+                <p class="card-text text-muted">Организуйте статьи с помощью тегов. Легко находите нужный контент по темам.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-5">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="fas fa-fire text-danger mr-2"></i>Популярные статьи</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <div class="media">
+                            <img src="https://via.placeholder.com/64" class="mr-3 rounded" alt="...">
+                            <div class="media-body">
+                                <h6 class="mt-0">Как начать вести блог</h6>
+                                <small class="text-muted">5 дней назад · 1.2k просмотров</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <div class="media">
+                            <img src="https://via.placeholder.com/64" class="mr-3 rounded" alt="...">
+                            <div class="media-body">
+                                <h6 class="mt-0">ASP.NET Core для начинающих</h6>
+                                <small class="text-muted">2 дня назад · 856 просмотров</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>

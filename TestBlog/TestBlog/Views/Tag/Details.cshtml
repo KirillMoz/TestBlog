@@ -1,0 +1,133 @@
+﻿@using System.Linq
+@model TestBlog.Models.Article
+
+@{
+    ViewData["Title"] = Model?.Title ?? "Статья";
+}
+
+@if (Model == null)
+{
+    <div class="alert alert-danger">Статья не найдена</div>
+}
+else
+{
+    <div class="container">
+        <!-- Навигация -->
+        <nav aria-label="breadcrumb" class="mb-4">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Главная</a></li>
+                <li class="breadcrumb-item"><a asp-action="Index">Статьи</a></li>
+                <li class="breadcrumb-item active">@Model.Title</li>
+            </ol>
+        </nav>
+
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h1 class="card-title mb-3">@Model.Title</h1>
+
+                <div class="text-muted mb-4">
+                    <i class="fas fa-user mr-2"></i> @(Model.Author?.Username ?? "Неизвестный")
+                    <span class="mx-3">|</span>
+                    <i class="fas fa-calendar-alt mr-2"></i> @Model.CreatedDate.ToString("dd MMMM yyyy")
+                    <span class="mx-3">|</span>
+                    <i class="fas fa-eye mr-2"></i> @Model.ViewCount просмотров
+
+                    @if (Model.UpdatedDate.HasValue)
+                    {
+                        <span class="mx-3">|</span>
+                        <i class="fas fa-edit mr-2"></i>
+                        <span>Обновлено: @Model.UpdatedDate.Value.ToShortDateString()</span>
+                    }
+                </div>
+
+                <div class="article-content mb-4">
+                    @Html.Raw(Model.Content ?? "")
+                </div>
+
+                @if (Model.ArticleTags != null && Model.ArticleTags.Any())
+                {
+                    <div class="mb-4">
+                        <strong class="mr-2">Теги:</strong>
+                        @foreach (var articleTag in Model.ArticleTags)
+                        {
+                            <a asp-action="ByTag" asp-route-tagId="@articleTag.TagId" class="tag">
+                                <i class="fas fa-tag mr-1"></i>@(articleTag.Tag?.Name ?? "тег")
+                            </a>
+                        }
+                    </div>
+                }
+
+                <hr />
+
+                <div class="d-flex justify-content-between">
+                    <a asp-action="Index" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left mr-2"></i>К списку
+                    </a>
+
+                    @if (User.Identity?.IsAuthenticated == true &&
+                   (User.Identity.Name == Model.Author?.Username ||
+                   User.IsInRole("Admin") ||
+                   User.IsInRole("Moderator")))
+                    {
+                        <div>
+                            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning mr-2">
+                                <i class="fas fa-edit mr-2"></i>Редактировать
+                            </a>
+                            <a asp-action="Delete" asp-route-id="@Model.Id" class="btn btn-danger">
+                                <i class="fas fa-trash mr-2"></i>Удалить
+                            </a>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Секция комментариев -->
+        <div class="card shadow-sm mt-4">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="fas fa-comments mr-2 text-primary"></i>Комментарии</h5>
+            </div>
+            <div class="card-body">
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    <form asp-controller="Comment" asp-action="Create" method="post" class="mb-4">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="articleId" value="@Model.Id" />
+                        <div class="form-group">
+                            <textarea name="content" class="form-control" rows="3"
+                                      placeholder="Напишите комментарий..." required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-paper-plane mr-2"></i>Отправить
+                        </button>
+                    </form>
+                }
+                else
+                {
+                    <p class="text-center text-muted">
+                        <a asp-controller="Account" asp-action="Login">Войдите</a> чтобы оставить комментарий
+                    </p>
+                }
+
+                <!-- Список комментариев будет здесь -->
+                @if (Model.Comments != null && Model.Comments.Any())
+                {
+                    @foreach (var comment in Model.Comments)
+                    {
+                        <div class="media mb-3">
+                            <div class="media-body">
+                                <h6 class="mt-0">@(comment.User?.Username ?? "Пользователь")</h6>
+                                <p>@comment.Content</p>
+                                <small class="text-muted">@comment.CreatedDate.ToShortDateString()</small>
+                            </div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <p class="text-muted text-center">Комментариев пока нет</p>
+                }
+            </div>
+        </div>
+    </div>
+}

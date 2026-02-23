@@ -1,28 +1,19 @@
-﻿using System.ComponentModel.DataAnnotations;
-
-namespace TestBlog.Models
+﻿namespace TestBlog.Models
 {
     public class Article
     {
         public int Id { get; set; }
-
-        [Required]
-        [StringLength(200)]
-        public required string Title { get; set; }
-
-        [Required]
-        public required string Content { get; set; }
-
+        public string Title { get; set; } = string.Empty;
+        public string Content { get; set; } = string.Empty;
         public DateTime CreatedDate { get; set; }
         public DateTime? UpdatedDate { get; set; }
-
-        public int AuthorId { get; set; }
         public int ViewCount { get; set; }
         public bool IsPublished { get; set; }
 
-        // Навигационные свойства
+        public int AuthorId { get; set; }
         public virtual User? Author { get; set; }
-        public virtual ICollection<Comment>? Comments { get; set; }
+
         public virtual ICollection<ArticleTag>? ArticleTags { get; set; }
+        public virtual ICollection<Comment>? Comments { get; set; }
     }
 }

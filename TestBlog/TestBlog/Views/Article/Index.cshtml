@@ -1,0 +1,99 @@
+﻿﻿@using System.Linq
+@model IEnumerable<TestBlog.Models.Article>
+
+@{
+    ViewData["Title"] = "Статьи";
+}
+
+@if (Model == null || !Model.Any())
+{
+    <div class="text-center py-5">
+        <i class="fas fa-newspaper fa-4x text-muted mb-3"></i>
+        <h3 class="text-muted">Пока нет статей</h3>
+    </div>
+}
+else
+{
+    <div class="container">
+        <div class="row mb-4">
+            <div class="col">
+                <h1><i class="fas fa-newspaper text-primary mr-2"></i>Все статьи</h1>
+            </div>
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+                <div class="col text-right">
+                    <a asp-action="Create" class="btn btn-primary">
+                        <i class="fas fa-plus mr-2"></i>Новая статья
+                    </a>
+                </div>
+            }
+        </div>
+
+        @if (!Model.Any())
+        {
+            <div class="text-center py-5">
+                <i class="fas fa-newspaper fa-4x text-muted mb-3"></i>
+                <h3 class="text-muted">Пока нет статей</h3>
+                <p class="lead text-muted mb-4">Будьте первым, кто опубликует статью!</p>
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    <a asp-action="Create" class="btn btn-primary btn-lg">
+                        <i class="fas fa-pen mr-2"></i>Написать статью
+                    </a>
+                }
+                else
+                {
+                    <a asp-controller="Account" asp-action="Register" class="btn btn-primary btn-lg">
+                        <i class="fas fa-user-plus mr-2"></i>Зарегистрироваться
+                    </a>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="row">
+                @foreach (var article in Model)
+                {
+                    <div class="col-md-6 col-lg-4 mb-4">
+                        <div class="card h-100 shadow-sm">
+                            <div class="card-body">
+                                <h5 class="card-title">
+                                    <a asp-action="Details" asp-route-id="@article.Id" class="text-decoration-none text-dark">
+                                        @article.Title
+                                    </a>
+                                </h5>
+                                <p class="card-text text-muted small">
+                                    <i class="fas fa-user mr-1"></i> @(article.Author?.Username ?? "Неизвестный")
+                                    <span class="mx-2">|</span>
+                                    <i class="fas fa-calendar-alt mr-1"></i> @article.CreatedDate.ToShortDateString()
+                                    <span class="mx-2">|</span>
+                                    <i class="fas fa-eye mr-1"></i> @article.ViewCount
+                                </p>
+                                <p class="card-text">
+                                    @(article.Content?.Length > 150 ? article.Content.Substring(0, 150) + "..." : article.Content ?? "Нет содержимого")
+                                </p>
+                            </div>
+                            <div class="card-footer bg-transparent">
+                                <a asp-action="Details" asp-route-id="@article.Id" class="btn btn-outline-primary btn-sm">
+                                    <i class="fas fa-eye mr-1"></i> Читать
+                                </a>
+                                @if (User.Identity?.IsAuthenticated == true &&
+                               (User.Identity.Name == article.Author?.Username ||
+                               User.IsInRole("Admin") ||
+                               User.IsInRole("Moderator")))
+                                {
+                                    <a asp-action="Edit" asp-route-id="@article.Id" class="btn btn-outline-warning btn-sm">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a asp-action="Delete" asp-route-id="@article.Id" class="btn btn-outline-danger btn-sm">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+}

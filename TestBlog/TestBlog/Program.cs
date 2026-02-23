@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using TestBlog.Data;
 using TestBlog.Data.Repositories;
 using TestBlog.Services;
+using TestBlog.Services.Interfaces;
 using TestBlog.Services.Implementations;
 
 var builder = WebApplication.CreateBuilder(args);

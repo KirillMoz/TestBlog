@@ -1,0 +1,67 @@
+﻿@model IEnumerable<TestBlog.Models.Article>
+
+@{
+    ViewData["Title"] = $"Статьи по тегу: {ViewBag.TagName}";
+}
+
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Главная</a></li>
+                    <li class="breadcrumb-item"><a asp-action="Index">Статьи</a></li>
+                    <li class="breadcrumb-item active">Тег: @ViewBag.TagName</li>
+                </ol>
+            </nav>
+
+            <h1>
+                <i class="fas fa-tag text-primary mr-2"></i>
+                Статьи с тегом: <span class="badge badge-primary" style="font-size: 1.5rem;">@ViewBag.TagName</span>
+            </h1>
+        </div>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="text-center py-5">
+            <i class="fas fa-tag fa-4x text-muted mb-3"></i>
+            <h3 class="text-muted">Нет статей с этим тегом</h3>
+            <p class="lead text-muted mb-4">Попробуйте найти другие теги</p>
+            <a asp-action="Index" class="btn btn-primary btn-lg">
+                <i class="fas fa-newspaper mr-2"></i>Все статьи
+            </a>
+        </div>
+    }
+    else
+    {
+        <div class="row">
+            @foreach (var article in Model)
+            {
+                <div class="col-md-6 mb-4">
+                    <div class="card h-100 shadow-sm">
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                <a asp-action="Details" asp-route-id="@article.Id" class="text-decoration-none">
+                                    @article.Title
+                                </a>
+                            </h5>
+                            <p class="card-text text-muted">
+                                <small>
+                                    <i class="fas fa-user mr-1"></i> @article.Author?.Username
+                                    <span class="mx-2">|</span>
+                                    <i class="fas fa-calendar-alt mr-1"></i> @article.CreatedDate.ToShortDateString()
+                                    <span class="mx-2">|</span>
+                                    <i class="fas fa-eye mr-1"></i> @article.ViewCount
+                                </small>
+                            </p>
+                            <p class="card-text">
+                                @(article.Content.Length > 200 ? article.Content.Substring(0, 200) + "..." : article.Content)
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>

@@ -1,6 +1,8 @@
 ﻿using TestBlog.Data.Repositories;
 using TestBlog.Models;
 using TestBlog.Utils;
+using TestBlog.Services.Interfaces;
+using Microsoft.Extensions.Logging;
 
 namespace TestBlog.Services.Implementations
 {
@@ -9,42 +11,92 @@ namespace TestBlog.Services.Implementations
         private readonly IRepository<User> _userRepository;
         private readonly IRepository<Role> _roleRepository;
         private readonly IRepository<UserRole> _userRoleRepository;
+        private readonly ILogger<UserService> _logger;
 
         public UserService(
             IRepository<User> userRepository,
             IRepository<Role> roleRepository,
-            IRepository<UserRole> userRoleRepository)
+            IRepository<UserRole> userRoleRepository,
+            ILogger<UserService> logger)
         {
             _userRepository = userRepository;
             _roleRepository = roleRepository;
             _userRoleRepository = userRoleRepository;
+            _logger = logger;
         }
 
-        public async Task<User> GetUserByIdAsync(int id)
-        {
-            return await _userRepository.GetByIdAsync(id);
-        }
-
-        public async Task<User> GetUserByUsernameAsync(string username)
+        public async Task<User?> GetUserByUsernameAsync(string? username)
         {
             if (string.IsNullOrWhiteSpace(username))
-                throw new ArgumentException("username cannot be empty", nameof(username));
+                return null;
 
-            var users = await _userRepository.FindAsync(u => u.Username == username);
-            var user = users?.FirstOrDefault();
+            var trimmedUsername = username.Trim();
+            var users = await _userRepository.FindAsync(u =>
+                u.Username != null && u.Username.ToLower() == trimmedUsername.ToLower());
 
-            return user ?? throw new KeyNotFoundException($"User with username {username} not found");
+            return users.FirstOrDefault();
         }
 
-        public async Task<User> GetUserByEmailAsync(string email)
+        public async Task<User?> GetUserByEmailAsync(string? email)
         {
             if (string.IsNullOrWhiteSpace(email))
-                throw new ArgumentException("Email cannot be empty", nameof(email));
+                return null;
 
-            var users = await _userRepository.FindAsync(u => u.Email == email);
-            var user = users?.FirstOrDefault();
+            var trimmedEmail = email.Trim().ToLower();
+            var users = await _userRepository.FindAsync(u =>
+                u.Email != null && u.Email.ToLower() == trimmedEmail);
 
-            return user ?? throw new KeyNotFoundException($"User with email {email} not found");
+            return users.FirstOrDefault();
+        }
+
+        public async Task<bool> CreateUserAsync(User user, string password)
+        {
+            try
+            {
+                if (user == null)
+                    return false;
+
+                user.Username = user.Username?.Trim() ?? string.Empty;
+                user.Email = user.Email?.Trim().ToLower() ?? string.Empty;
+
+                if (string.IsNullOrEmpty(user.Username) || string.IsNullOrEmpty(user.Email) || string.IsNullOrEmpty(password))
+                {
+                    return false;
+                }
+
+                var existingUserByUsername = await GetUserByUsernameAsync(user.Username);
+                if (existingUserByUsername != null)
+                {
+                    return false;
+                }
+
+                var existingUserByEmail = await GetUserByEmailAsync(user.Email);
+                if (existingUserByEmail != null)
+                {
+                    return false;
+                }
+
+                user.PasswordHash = PasswordHelper.HashPassword(password);
+                user.RegistrationDate = DateTime.Now;
+                user.IsActive = true;
+
+                await _userRepository.AddAsync(user);
+                await _userRepository.SaveAsync();
+
+                await AddUserToRoleAsync(user.Id, "User");
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при создании пользователя");
+                return false;
+            }
+        }
+
+        public async Task<User?> GetUserByIdAsync(int id)
+        {
+            return await _userRepository.GetByIdAsync(id);
         }
 
         public async Task<IEnumerable<User>> GetAllUsersAsync()
@@ -52,66 +104,13 @@ namespace TestBlog.Services.Implementations
             return await _userRepository.GetAllAsync();
         }
 
-        public async Task<bool> CreateUserAsync(User user, string password)
-        {
-            if (user == null)
-                return false;
-
-            // Расширенная валидация
-            if (string.IsNullOrWhiteSpace(user.Username))
-            {
-                // Можно логировать ошибку
-                return false;
-            }
-
-            if (string.IsNullOrWhiteSpace(user.Email))
-            {
-                return false;
-            }
-
-            if (string.IsNullOrWhiteSpace(password))
-            {
-                return false;
-            }
-
-            // Проверка формата email (опционально)
-            if (!IsValidEmail(user.Email))
-            {
-                return false;
-            }
-
-            try
-            {
-                // Теперь здесь нет предупреждений
-                var existingUserByUsername = await GetUserByUsernameAsync(user.Username);
-                if (existingUserByUsername != null)
-                    return false;
-
-                var existingUserByEmail = await GetUserByEmailAsync(user.Email);
-                if (existingUserByEmail != null)
-                    return false;
-
-                // Остальной код...
-                user.PasswordHash = PasswordHelper.HashPassword(password);
-                user.RegistrationDate = DateTime.Now;
-                user.IsActive = true;
-
-                await _userRepository.AddAsync(user);
-                await _userRepository.SaveAsync();
-                await AddUserToRoleAsync(user.Id, "User");
-
-                return true;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
-        }
-
         public async Task<bool> UpdateUserAsync(User user)
         {
             try
             {
+                if (user == null)
+                    return false;
+
                 _userRepository.Update(user);
                 await _userRepository.SaveAsync();
                 return true;
@@ -141,14 +140,16 @@ namespace TestBlog.Services.Implementations
             }
         }
 
-        public async Task<bool> AuthenticateAsync(string username, string password)
+        public async Task<bool> AuthenticateAsync(string? username, string? password)
         {
-            var user = await GetUserByUsernameAsync(username);
-            if (user == null || !user.IsActive)
+            if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password))
                 return false;
 
-            return user.PasswordHash != null &&
-                PasswordHelper.VerifyPassword(password, user.PasswordHash);
+            var user = await GetUserByUsernameAsync(username);
+            if (user == null || !user.IsActive || string.IsNullOrEmpty(user.PasswordHash))
+                return false;
+
+            return PasswordHelper.VerifyPassword(password, user.PasswordHash);
         }
 
         public async Task<IEnumerable<Role>> GetUserRolesAsync(int userId)
@@ -171,6 +172,9 @@ namespace TestBlog.Services.Implementations
         {
             try
             {
+                if (string.IsNullOrEmpty(roleName))
+                    return false;
+
                 var user = await GetUserByIdAsync(userId);
                 var roles = await _roleRepository.FindAsync(r => r.Name == roleName);
                 var role = roles.FirstOrDefault();
@@ -203,6 +207,9 @@ namespace TestBlog.Services.Implementations
         {
             try
             {
+                if (string.IsNullOrEmpty(roleName))
+                    return false;
+
                 var roles = await _roleRepository.FindAsync(r => r.Name == roleName);
                 var role = roles.FirstOrDefault();
 
@@ -232,45 +239,24 @@ namespace TestBlog.Services.Implementations
             return roles.Any(r => r.Name == roleName);
         }
 
-        public async Task<bool> ChangePasswordAsync(int userId, string oldPassword, string newPassword)
+        public async Task<bool> ChangePasswordAsync(int userId, string? oldPassword, string? newPassword)
         {
             try
             {
-                if (string.IsNullOrWhiteSpace(oldPassword))
+                if (string.IsNullOrEmpty(oldPassword) || string.IsNullOrEmpty(newPassword))
                     return false;
 
-                if (string.IsNullOrWhiteSpace(newPassword))
-                    return false;
-
-                var user = await GetUserByIdAsync(userId); 
-                if (user == null)
-                    return false;
-
-                if (string.IsNullOrEmpty(user.PasswordHash))
+                var user = await GetUserByIdAsync(userId);
+                if (user == null || string.IsNullOrEmpty(user.PasswordHash))
                     return false;
 
                 if (!PasswordHelper.VerifyPassword(oldPassword, user.PasswordHash))
                     return false;
 
                 user.PasswordHash = PasswordHelper.HashPassword(newPassword);
-
                 _userRepository.Update(user);
                 await _userRepository.SaveAsync();
-
                 return true;
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
-        private bool IsValidEmail(string email)
-        {
-            try
-            {
-                var addr = new System.Net.Mail.MailAddress(email);
-                return addr.Address == email;
             }
             catch
             {

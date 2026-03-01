@@ -1,0 +1,35 @@
+@{
+    var statusCode = ViewBag.StatusCode as int? ?? 0;
+    var is404 = statusCode == 404;
+    ViewData["Title"] = is404 ? "Страница не найдена" : "Ошибка";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-8 text-center">
+        <div class="card">
+            <div class="card-body p-5">
+                @if (is404)
+                {
+                    <i class="fas fa-search fa-5x text-warning mb-4"></i>
+                    <h1 class="display-4">404</h1>
+                    <h3 class="mb-4">Страница не найдена</h3>
+                    <p class="lead text-muted mb-4">
+                        Запрашиваемая страница не существует или была удалена.
+                    </p>
+                }
+                else
+                {
+                    <i class="fas fa-exclamation-circle fa-5x text-danger mb-4"></i>
+                    <h1 class="display-4">@statusCode</h1>
+                    <h3 class="mb-4">Произошла ошибка</h3>
+                    <p class="lead text-muted mb-4">
+                        При обработке вашего запроса произошла ошибка.
+                    </p>
+                }
+                <a asp-controller="Home" asp-action="Index" class="btn btn-primary">
+                    <i class="fas fa-home mr-2"></i>На главную
+                </a>
+            </div>
+        </div>
+    </div>
+</div>

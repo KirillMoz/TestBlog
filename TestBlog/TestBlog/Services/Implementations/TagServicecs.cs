@@ -1,4 +1,5 @@
-﻿using TestBlog.Data.Repositories;
+﻿using Microsoft.Extensions.Logging;
+using TestBlog.Data.Repositories;
 using TestBlog.Models;
 
 namespace TestBlog.Services.Implementations
@@ -7,13 +8,16 @@ namespace TestBlog.Services.Implementations
     {
         private readonly IRepository<Tag> _tagRepository;
         private readonly IRepository<ArticleTag> _articleTagRepository;
+        private readonly ILogger<TagService> _logger;
 
         public TagService(
             IRepository<Tag> tagRepository,
-            IRepository<ArticleTag> articleTagRepository)
+            IRepository<ArticleTag> articleTagRepository,
+            ILogger<TagService> logger)
         {
             _tagRepository = tagRepository;
             _articleTagRepository = articleTagRepository;
+            _logger = logger;
         }
 
         public async Task<Tag> GetTagByIdAsync(int id)
@@ -51,10 +55,12 @@ namespace TestBlog.Services.Implementations
 
                 await _tagRepository.AddAsync(tag);
                 await _tagRepository.SaveAsync();
+                _logger.LogInformation("Создан тег ID {TagId} '{TagName}'", tag.Id, tag.Name);
                 return true;
             }
-            catch
+            catch (Exception ex)
             {
+                _logger.LogError(ex, "Ошибка при создании тега '{TagName}'", tag.Name);
                 return false;
             }
         }
@@ -65,10 +71,12 @@ namespace TestBlog.Services.Implementations
             {
                 _tagRepository.Update(tag);
                 await _tagRepository.SaveAsync();
+                _logger.LogInformation("Обновлен тег ID {TagId} '{TagName}'", tag.Id, tag.Name);
                 return true;
             }
-            catch
+            catch (Exception ex)
             {
+                _logger.LogError(ex, "Ошибка при обновлении тега ID {TagId}", tag.Id);
                 return false;
             }
         }
@@ -85,12 +93,14 @@ namespace TestBlog.Services.Implementations
 
                     _tagRepository.Delete(tag);
                     await _tagRepository.SaveAsync();
+                    _logger.LogInformation("Удален тег ID {TagId} '{TagName}'", id, tag.Name);
                     return true;
                 }
                 return false;
             }
-            catch
+            catch (Exception ex)
             {
+                _logger.LogError(ex, "Ошибка при удалении тега ID {TagId}", id);
                 return false;
             }
         }

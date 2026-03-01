@@ -1,12 +1,18 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
+using NLog.Web;
 using TestBlog.Data;
 using TestBlog.Data.Repositories;
+using TestBlog.Middleware;
 using TestBlog.Services;
 using TestBlog.Services.Interfaces;
 using TestBlog.Services.Implementations;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// NLog
+builder.Logging.ClearProviders();
+builder.Host.UseNLog();
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
@@ -43,9 +49,12 @@ builder.Services.AddScoped<ICommentService, CommentService>();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
+app.UseMiddleware<ExceptionLoggingMiddleware>();
+app.UseExceptionHandler("/Home/Error");
+app.UseStatusCodePagesWithReExecute("/Home/StatusCode", "?code={0}");
+
 if (!app.Environment.IsDevelopment())
 {
-    app.UseExceptionHandler("/Home/Error");
     app.UseHsts();
 }
 

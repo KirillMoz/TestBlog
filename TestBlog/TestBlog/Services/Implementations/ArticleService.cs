@@ -1,4 +1,5 @@
-﻿using TestBlog.Data.Repositories;
+﻿using Microsoft.Extensions.Logging;
+using TestBlog.Data.Repositories;
 using TestBlog.Models;
 
 namespace TestBlog.Services.Implementations
@@ -8,15 +9,18 @@ namespace TestBlog.Services.Implementations
         private readonly IRepository<Article> _articleRepository;
         private readonly IRepository<ArticleTag> _articleTagRepository;
         private readonly IRepository<Tag> _tagRepository;
+        private readonly ILogger<ArticleService> _logger;
 
         public ArticleService(
             IRepository<Article> articleRepository,
             IRepository<ArticleTag> articleTagRepository,
-            IRepository<Tag> tagRepository)
+            IRepository<Tag> tagRepository,
+            ILogger<ArticleService> logger)
         {
             _articleRepository = articleRepository;
             _articleTagRepository = articleTagRepository;
             _tagRepository = tagRepository;
+            _logger = logger;
         }
 
         public async Task<Article> GetArticleByIdAsync(int id)
@@ -76,10 +80,12 @@ namespace TestBlog.Services.Implementations
                 }
 
                 await _articleTagRepository.SaveAsync();
+                _logger.LogInformation("Создана статья ID {ArticleId} '{Title}'", article.Id, article.Title);
                 return true;
             }
-            catch
+            catch (Exception ex)
             {
+                _logger.LogError(ex, "Ошибка при создании статьи '{Title}'", article.Title);
                 return false;
             }
         }
@@ -108,10 +114,12 @@ namespace TestBlog.Services.Implementations
                 }
 
                 await _articleTagRepository.SaveAsync();
+                _logger.LogInformation("Обновлена статья ID {ArticleId}", article.Id);
                 return true;
             }
-            catch
+            catch (Exception ex)
             {
+                _logger.LogError(ex, "Ошибка при обновлении статьи ID {ArticleId}", article.Id);
                 return false;
             }
         }
@@ -125,12 +133,14 @@ namespace TestBlog.Services.Implementations
                 {
                     _articleRepository.Delete(article);
                     await _articleRepository.SaveAsync();
+                    _logger.LogInformation("Удалена статья ID {ArticleId}", id);
                     return true;
                 }
                 return false;
             }
-            catch
+            catch (Exception ex)
             {
+                _logger.LogError(ex, "Ошибка при удалении статьи ID {ArticleId}", id);
                 return false;
             }
         }
@@ -147,10 +157,12 @@ namespace TestBlog.Services.Implementations
                 article.UpdatedDate = DateTime.Now;
                 _articleRepository.Update(article);
                 await _articleRepository.SaveAsync();
+                _logger.LogInformation("Опубликована статья ID {ArticleId}", id);
                 return true;
             }
-            catch
+            catch (Exception ex)
             {
+                _logger.LogError(ex, "Ошибка при публикации статьи ID {ArticleId}", id);
                 return false;
             }
         }
@@ -167,10 +179,12 @@ namespace TestBlog.Services.Implementations
                 article.UpdatedDate = DateTime.Now;
                 _articleRepository.Update(article);
                 await _articleRepository.SaveAsync();
+                _logger.LogInformation("Снята с публикации статья ID {ArticleId}", id);
                 return true;
             }
-            catch
+            catch (Exception ex)
             {
+                _logger.LogError(ex, "Ошибка при снятии с публикации статьи ID {ArticleId}", id);
                 return false;
             }
         }

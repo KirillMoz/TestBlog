@@ -1,4 +1,5 @@
-﻿using TestBlog.Data.Repositories;
+﻿using Microsoft.Extensions.Logging;
+using TestBlog.Data.Repositories;
 using TestBlog.Models;
 
 namespace TestBlog.Services.Implementations
@@ -6,10 +7,12 @@ namespace TestBlog.Services.Implementations
     public class CommentService : ICommentService
     {
         private readonly IRepository<Comment> _commentRepository;
+        private readonly ILogger<CommentService> _logger;
 
-        public CommentService(IRepository<Comment> commentRepository)
+        public CommentService(IRepository<Comment> commentRepository, ILogger<CommentService> logger)
         {
             _commentRepository = commentRepository;
+            _logger = logger;
         }
 
         public async Task<Comment> GetCommentByIdAsync(int id)
@@ -36,10 +39,12 @@ namespace TestBlog.Services.Implementations
 
                 await _commentRepository.AddAsync(comment);
                 await _commentRepository.SaveAsync();
+                _logger.LogInformation("Создан комментарий ID {CommentId} к статье ID {ArticleId}", comment.Id, comment.ArticleId);
                 return true;
             }
-            catch
+            catch (Exception ex)
             {
+                _logger.LogError(ex, "Ошибка при создании комментария к статье ID {ArticleId}", comment.ArticleId);
                 return false;
             }
         }
@@ -51,10 +56,12 @@ namespace TestBlog.Services.Implementations
                 comment.UpdatedDate = DateTime.Now;
                 _commentRepository.Update(comment);
                 await _commentRepository.SaveAsync();
+                _logger.LogInformation("Обновлен комментарий ID {CommentId}", comment.Id);
                 return true;
             }
-            catch
+            catch (Exception ex)
             {
+                _logger.LogError(ex, "Ошибка при обновлении комментария ID {CommentId}", comment.Id);
                 return false;
             }
         }
@@ -68,12 +75,14 @@ namespace TestBlog.Services.Implementations
                 {
                     _commentRepository.Delete(comment);
                     await _commentRepository.SaveAsync();
+                    _logger.LogInformation("Удален комментарий ID {CommentId}", id);
                     return true;
                 }
                 return false;
             }
-            catch
+            catch (Exception ex)
             {
+                _logger.LogError(ex, "Ошибка при удалении комментария ID {CommentId}", id);
                 return false;
             }
         }
@@ -89,10 +98,12 @@ namespace TestBlog.Services.Implementations
                 comment.IsApproved = true;
                 _commentRepository.Update(comment);
                 await _commentRepository.SaveAsync();
+                _logger.LogInformation("Одобрен комментарий ID {CommentId}", id);
                 return true;
             }
-            catch
+            catch (Exception ex)
             {
+                _logger.LogError(ex, "Ошибка при одобрении комментария ID {CommentId}", id);
                 return false;
             }
         }

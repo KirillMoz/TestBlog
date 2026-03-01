@@ -10,13 +10,16 @@ namespace TestBlog.Controllers
     {
         private readonly IUserService _userService;
         private readonly IArticleService _articleService;
+        private readonly ILogger<AdminController> _logger;
 
         public AdminController(
             IUserService userService,
-            IArticleService articleService)
+            IArticleService articleService,
+            ILogger<AdminController> logger)
         {
             _userService = userService;
             _articleService = articleService;
+            _logger = logger;
         }
 
         // Этот метод доступен только пользователям с ролью Admin
@@ -57,6 +60,7 @@ namespace TestBlog.Controllers
         public async Task<IActionResult> AddToRole(int userId, string roleName)
         {
             await _userService.AddUserToRoleAsync(userId, roleName);
+            _logger.LogInformation("Администратор {Admin} назначил роль '{Role}' пользователю ID {UserId}", User.Identity?.Name, roleName, userId);
             return RedirectToAction(nameof(UserRoles), new { userId });
         }
 
@@ -65,6 +69,7 @@ namespace TestBlog.Controllers
         public async Task<IActionResult> RemoveFromRole(int userId, string roleName)
         {
             await _userService.RemoveUserFromRoleAsync(userId, roleName);
+            _logger.LogInformation("Администратор {Admin} снял роль '{Role}' у пользователя ID {UserId}", User.Identity?.Name, roleName, userId);
             return RedirectToAction(nameof(UserRoles), new { userId });
         }
 
@@ -77,6 +82,7 @@ namespace TestBlog.Controllers
             {
                 user.IsActive = false;
                 await _userService.UpdateUserAsync(user);
+                _logger.LogInformation("Администратор {Admin} деактивировал пользователя '{Username}' (ID {UserId})", User.Identity?.Name, user.Username, userId);
             }
             return RedirectToAction(nameof(Users));
         }
@@ -90,6 +96,7 @@ namespace TestBlog.Controllers
             {
                 user.IsActive = true;
                 await _userService.UpdateUserAsync(user);
+                _logger.LogInformation("Администратор {Admin} активировал пользователя '{Username}' (ID {UserId})", User.Identity?.Name, user.Username, userId);
             }
             return RedirectToAction(nameof(Users));
         }

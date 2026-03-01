@@ -93,10 +93,15 @@ else
                 {
                     <form asp-controller="Comment" asp-action="Create" method="post" class="mb-4">
                         @Html.AntiForgeryToken()
-                        <input type="hidden" name="articleId" value="@Model.Id" />
+                        <input type="hidden" name="ArticleId" value="@Model.Id" />
                         <div class="form-group">
-                            <textarea name="content" class="form-control" rows="3"
-                                      placeholder="Напишите комментарий..." required></textarea>
+                            <textarea name="Content" class="form-control" rows="3"
+                                      placeholder="Напишите комментарий..."
+                                      data-val="true"
+                                      data-val-required="Текст комментария обязателен"
+                                      data-val-length="Комментарий не должен превышать 2000 символов"
+                                      data-val-length-max="2000"></textarea>
+                            <span class="text-danger field-validation-valid" data-valmsg-for="Content" data-valmsg-replace="true"></span>
                         </div>
                         <button type="submit" class="btn btn-primary">
                             <i class="fas fa-paper-plane mr-2"></i>Отправить
@@ -131,4 +136,10 @@ else
             </div>
         </div>
     </div>
+}
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
 }

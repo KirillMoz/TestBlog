@@ -115,8 +115,9 @@ namespace TestBlog.Services.Implementations
                 await _userRepository.SaveAsync();
                 return true;
             }
-            catch
+            catch (Exception ex)
             {
+                _logger.LogError(ex, "Ошибка при обновлении пользователя ID {UserId}", user?.Id);
                 return false;
             }
         }
@@ -130,12 +131,14 @@ namespace TestBlog.Services.Implementations
                 {
                     _userRepository.Delete(user);
                     await _userRepository.SaveAsync();
+                    _logger.LogInformation("Удален пользователь ID {UserId} '{Username}'", id, user.Username);
                     return true;
                 }
                 return false;
             }
-            catch
+            catch (Exception ex)
             {
+                _logger.LogError(ex, "Ошибка при удалении пользователя ID {UserId}", id);
                 return false;
             }
         }
@@ -195,10 +198,12 @@ namespace TestBlog.Services.Implementations
                 });
 
                 await _userRoleRepository.SaveAsync();
+                _logger.LogInformation("Пользователю ID {UserId} назначена роль '{RoleName}'", userId, roleName);
                 return true;
             }
-            catch
+            catch (Exception ex)
             {
+                _logger.LogError(ex, "Ошибка при назначении роли '{RoleName}' пользователю ID {UserId}", roleName, userId);
                 return false;
             }
         }
@@ -225,10 +230,12 @@ namespace TestBlog.Services.Implementations
 
                 _userRoleRepository.Delete(userRole);
                 await _userRoleRepository.SaveAsync();
+                _logger.LogInformation("У пользователя ID {UserId} снята роль '{RoleName}'", userId, roleName);
                 return true;
             }
-            catch
+            catch (Exception ex)
             {
+                _logger.LogError(ex, "Ошибка при снятии роли '{RoleName}' у пользователя ID {UserId}", roleName, userId);
                 return false;
             }
         }
@@ -256,10 +263,12 @@ namespace TestBlog.Services.Implementations
                 user.PasswordHash = PasswordHelper.HashPassword(newPassword);
                 _userRepository.Update(user);
                 await _userRepository.SaveAsync();
+                _logger.LogInformation("Пользователь ID {UserId} сменил пароль", userId);
                 return true;
             }
-            catch
+            catch (Exception ex)
             {
+                _logger.LogError(ex, "Ошибка при смене пароля пользователя ID {UserId}", userId);
                 return false;
             }
         }

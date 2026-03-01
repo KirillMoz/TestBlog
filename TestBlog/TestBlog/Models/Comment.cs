@@ -6,7 +6,9 @@ namespace TestBlog.Models
     {
         public int Id { get; set; }
 
-        [Required]
+        [Required(ErrorMessage = "Текст комментария обязателен")]
+        [StringLength(2000, ErrorMessage = "Комментарий не должен превышать 2000 символов")]
+        [Display(Name = "Комментарий")]
         public required string Content { get; set; }
 
         public DateTime CreatedDate { get; set; }

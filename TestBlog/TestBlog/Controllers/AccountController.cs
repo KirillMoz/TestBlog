@@ -36,6 +36,7 @@ namespace TestBlog.Controllers
 
             if (!isAuthenticated)
             {
+                _logger.LogWarning("Неудачная попытка входа для пользователя '{Username}'", model.Username);
                 ModelState.AddModelError("", "Неверное имя пользователя или пароль");
                 return View(model);
             }
@@ -44,6 +45,7 @@ namespace TestBlog.Controllers
 
             if (user == null || !user.IsActive)
             {
+                _logger.LogWarning("Попытка входа в деактивированный аккаунт '{Username}'", model.Username);
                 ModelState.AddModelError("", "Аккаунт деактивирован");
                 return View(model);
             }
@@ -78,6 +80,7 @@ namespace TestBlog.Controllers
             user.LastLoginDate = DateTime.Now;
             await _userService.UpdateUserAsync(user);
 
+            _logger.LogInformation("Пользователь '{Username}' успешно вошел в систему", model.Username);
             return RedirectToAction("Index", "Home");
         }
 
@@ -140,6 +143,7 @@ namespace TestBlog.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Logout()
         {
+            _logger.LogInformation("Пользователь '{Username}' вышел из системы", User.Identity?.Name);
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
             return RedirectToAction("Index", "Home");
         }
@@ -196,10 +200,12 @@ namespace TestBlog.Controllers
 
             if (result)
             {
+                _logger.LogInformation("Пользователь ID {UserId} сменил пароль", userId);
                 TempData["SuccessMessage"] = "Пароль успешно изменен";
                 return RedirectToAction("Profile");
             }
 
+            _logger.LogWarning("Неудачная попытка смены пароля для пользователя ID {UserId}", userId);
             ModelState.AddModelError("", "Неверный текущий пароль");
             return View(model);
         }

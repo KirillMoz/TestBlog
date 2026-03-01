@@ -1,9 +1,18 @@
-﻿namespace TestBlog.Models
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace TestBlog.Models
 {
     public class Article
     {
         public int Id { get; set; }
+
+        [Required(ErrorMessage = "Заголовок обязателен")]
+        [StringLength(200, ErrorMessage = "Заголовок не должен превышать 200 символов")]
+        [Display(Name = "Заголовок")]
         public string Title { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Содержание обязательно")]
+        [Display(Name = "Содержание")]
         public string Content { get; set; } = string.Empty;
         public DateTime CreatedDate { get; set; }
         public DateTime? UpdatedDate { get; set; }

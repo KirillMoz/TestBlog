@@ -1,6 +1,9 @@
+using System.Diagnostics;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using TestBlog.Models;
 using TestBlog.Services;
+using TestBlog.ViewModels;
 
 namespace TestBlog.Controllers
 {
@@ -40,10 +43,16 @@ namespace TestBlog.Controllers
         [HttpPost]
         [AllowAnonymous]
         [ValidateAntiForgeryToken]
-        public IActionResult Contact(string name, string email, string message)
+        public IActionResult Contact(ContactViewModel model)
         {
-            // Здесь можно добавить логику отправки email
-            TempData["SuccessMessage"] = "Сообщение успешно отправлено! Мы свяжемся с вами в ближайшее время.";
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
+            // Р—РґРµСЃСЊ РјРѕР¶РЅРѕ РґРѕР±Р°РІРёС‚СЊ Р»РѕРіРёРєСѓ РѕС‚РїСЂР°РІРєРё email
+            _logger.LogInformation("РћС‚РїСЂР°РІР»РµРЅР° С„РѕСЂРјР° РѕР±СЂР°С‚РЅРѕР№ СЃРІСЏР·Рё РѕС‚ {Name} ({Email})", model.Name, model.Email);
+            TempData["SuccessMessage"] = "РЎРѕРѕР±С‰РµРЅРёРµ СѓСЃРїРµС€РЅРѕ РѕС‚РїСЂР°РІР»РµРЅРѕ! РњС‹ СЃРІСЏР¶РµРјСЃСЏ СЃ РІР°РјРё РІ Р±Р»РёР¶Р°Р№С€РµРµ РІСЂРµРјСЏ.";
             return RedirectToAction("Contact");
         }
 
@@ -55,12 +64,18 @@ namespace TestBlog.Controllers
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()
         {
-            return View();
+            var model = new ErrorViewModel
+            {
+                RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier
+            };
+            return View(model);
         }
 
-        public IActionResult NotFound404()
+        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
+        public new IActionResult StatusCode([FromQuery] int code)
         {
-            return NotFound();
+            ViewBag.StatusCode = code;
+            return View();
         }
     }
 }

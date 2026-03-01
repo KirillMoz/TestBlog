@@ -14,15 +14,18 @@ namespace TestBlog.Controllers
         private readonly IArticleService _articleService;
         private readonly ITagService _tagService;
         private readonly IUserService _userService;
+        private readonly ILogger<ArticleController> _logger;
 
         public ArticleController(
             IArticleService articleService,
             ITagService tagService,
-            IUserService userService)
+            IUserService userService,
+            ILogger<ArticleController> logger)
         {
             _articleService = articleService;
             _tagService = tagService;
             _userService = userService;
+            _logger = logger;
         }
 
         [AllowAnonymous]
@@ -37,7 +40,10 @@ namespace TestBlog.Controllers
         {
             var article = await _articleService.GetArticleByIdAsync(id);
             if (article == null)
+            {
+                _logger.LogWarning("Статья с ID {ArticleId} не найдена", id);
                 return NotFound();
+            }
 
             await _articleService.IncrementViewCountAsync(id);
             return View(article);
@@ -73,11 +79,13 @@ namespace TestBlog.Controllers
 
                 if (result)
                 {
+                    _logger.LogInformation("Пользователь {User} создал статью '{Title}'", User.Identity?.Name, article.Title);
                     TempData["SuccessMessage"] = "Статья успешно создана!";
                     return RedirectToAction(nameof(MyArticles));
                 }
                 else
                 {
+                    _logger.LogWarning("Не удалось создать статью '{Title}' пользователем {User}", article.Title, User.Identity?.Name);
                     ModelState.AddModelError("", "Ошибка при создании статьи");
                 }
             }
@@ -103,6 +111,7 @@ namespace TestBlog.Controllers
 
             if (article.AuthorId != user.Id && !User.IsInRole("Admin") && !User.IsInRole("Moderator"))
             {
+                _logger.LogWarning("Пользователь {User} попытался редактировать чужую статью ID {ArticleId}", User.Identity?.Name, id);
                 return Forbid();
             }
 
@@ -124,11 +133,13 @@ namespace TestBlog.Controllers
 
                 if (result)
                 {
+                    _logger.LogInformation("Пользователь {User} обновил статью ID {ArticleId}", User.Identity?.Name, article.Id);
                     TempData["SuccessMessage"] = "Статья успешно обновлена!";
                     return RedirectToAction(nameof(Details), new { id = article.Id });
                 }
                 else
                 {
+                    _logger.LogWarning("Не удалось обновить статью ID {ArticleId}", article.Id);
                     ModelState.AddModelError("", "Ошибка при обновлении статьи");
                 }
             }
@@ -154,6 +165,7 @@ namespace TestBlog.Controllers
 
             if (article.AuthorId != user.Id && !User.IsInRole("Admin"))
             {
+                _logger.LogWarning("Пользователь {User} попытался удалить чужую статью ID {ArticleId}", User.Identity?.Name, id);
                 return Forbid();
             }
 
@@ -165,6 +177,7 @@ namespace TestBlog.Controllers
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             await _articleService.DeleteArticleAsync(id);
+            _logger.LogInformation("Пользователь {User} удалил статью ID {ArticleId}", User.Identity?.Name, id);
             TempData["SuccessMessage"] = "Статья успешно удалена!";
             return RedirectToAction(nameof(MyArticles));
         }
@@ -180,6 +193,7 @@ namespace TestBlog.Controllers
         public async Task<IActionResult> Publish(int id)
         {
             await _articleService.PublishArticleAsync(id);
+            _logger.LogInformation("Пользователь {User} опубликовал статью ID {ArticleId}", User.Identity?.Name, id);
             TempData["SuccessMessage"] = "Статья опубликована!";
             return RedirectToAction(nameof(Admin));
         }
@@ -188,6 +202,7 @@ namespace TestBlog.Controllers
         public async Task<IActionResult> Unpublish(int id)
         {
             await _articleService.UnpublishArticleAsync(id);
+            _logger.LogInformation("Пользователь {User} снял с публикации статью ID {ArticleId}", User.Identity?.Name, id);
             TempData["SuccessMessage"] = "Статья снята с публикации!";
             return RedirectToAction(nameof(Admin));
         }

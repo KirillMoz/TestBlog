@@ -9,11 +9,13 @@ namespace TestBlog.Controllers
     {
         private readonly ITagService _tagService;
         private readonly IArticleService _articleService;
+        private readonly ILogger<TagController> _logger;
 
-        public TagController(ITagService tagService, IArticleService articleService)
+        public TagController(ITagService tagService, IArticleService articleService, ILogger<TagController> logger)
         {
             _tagService = tagService;
             _articleService = articleService;
+            _logger = logger;
         }
 
         // GET: /Tag/Index
@@ -82,6 +84,7 @@ namespace TestBlog.Controllers
                 var result = await _tagService.CreateTagAsync(tag);
                 if (result)
                 {
+                    _logger.LogInformation("Пользователь {User} создал тег '{TagName}'", User.Identity?.Name, model.Name);
                     TempData["SuccessMessage"] = "Тег успешно создан";
                     return RedirectToAction(nameof(Index));
                 }
@@ -129,6 +132,7 @@ namespace TestBlog.Controllers
                 var result = await _tagService.UpdateTagAsync(tag);
                 if (result)
                 {
+                    _logger.LogInformation("Пользователь {User} обновил тег ID {TagId} '{TagName}'", User.Identity?.Name, model.Id, model.Name);
                     TempData["SuccessMessage"] = "Тег успешно обновлен";
                     return RedirectToAction(nameof(Index));
                 }
@@ -146,10 +150,12 @@ namespace TestBlog.Controllers
             var result = await _tagService.DeleteTagAsync(id);
             if (result)
             {
+                _logger.LogInformation("Пользователь {User} удалил тег ID {TagId}", User.Identity?.Name, id);
                 TempData["SuccessMessage"] = "Тег успешно удален";
             }
             else
             {
+                _logger.LogWarning("Не удалось удалить тег ID {TagId}", id);
                 TempData["ErrorMessage"] = "Ошибка при удалении тега";
             }
             return RedirectToAction(nameof(Index));
